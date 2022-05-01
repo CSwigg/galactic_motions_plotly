@@ -22,15 +22,19 @@ default_marker_properties = dict(color = 'white', size = 4)
 
 class MovieStar:
 
-    def __init__(self, name, time_to_integrate, df = None, key_dict = None, marker_properties = default_marker_properties):
+    def __init__(self, name, time_to_integrate, df = None, orbit = None, key_dict = None, marker_properties = default_marker_properties):
+
         self.name = name
         self.key_dict = key_dict
         self.time_to_integrate = time_to_integrate
         self.marker_properties = marker_properties
 
         if df is not None:
+            self.orbit = orbit
+        else:
             self.df = df.rename(columns = self.key_dict) # rename cols based on user-specification
             self.df = self.df[list(self.key_dict.values())] # limit dataframe to only necessary cols
+            self.orbit = None
         self.df_integrated = self.generate_orbit_dataframe()
 
     def __str__(self):
@@ -38,15 +42,7 @@ class MovieStar:
 
     def generate_orbit_dataframe(self):   
 
-        if self.name == 'sun':
-            orbit = Orbit([0 * u.deg, 0 * u.deg, 0 * u.pc, 0 * u.mas / u.yr, 0 * u.mas / u.yr, 0 * u.km / u.s],
-                               lb=False, uvw=False, radec=True,
-                               ro=Galactocentric.galcen_distance,
-                               zo=Galactocentric.z_sun,
-                               vo=Galactocentric.galcen_v_sun.d_y - GalacticLSR.v_bary.d_y,
-                               solarmotion=u.Quantity([-GalacticLSR.v_bary.d_x, GalacticLSR.v_bary.d_y, GalacticLSR.v_bary.d_z]))
-            
-        else:
+        if self.orbit is None:
             icrs = SkyCoord(ra = self.df.ra.values*u.deg,
                             dec = self.df.dec.values*u.deg,
                             distance = (1000/self.df.parallax.values)*u.pc,
@@ -54,14 +50,14 @@ class MovieStar:
                             pm_dec = self.df.pmdec.values*(u.mas/u.yr),
                             radial_velocity = self.df.radial_velocity.values*(u.km/u.s)
                         )
-            orbit = Orbit(vxvv = icrs)
+            self.orbit = Orbit(vxvv = icrs)
 
-        orbit.integrate(self.time_to_integrate*u.Myr, pot = MWPotential2014)
-        ra_int = orbit.ra(self.time_to_integrate*u.Myr).flatten()
-        dec_int = orbit.dec(self.time_to_integrate*u.Myr).flatten()
-        distance_int = orbit.dist(self.time_to_integrate*u.Myr).flatten()*1000
+        self.orbit.integrate(self.time_to_integrate*u.Myr, pot = MWPotential2014)
+        ra_int = self.orbit.ra(self.time_to_integrate*u.Myr).flatten()
+        dec_int = self.orbit.dec(self.time_to_integrate*u.Myr).flatten()
+        distance_int = self.orbit.dist(self.time_to_integrate*u.Myr).flatten()*1000
 
-        if self.name == 'sun':
+        if (self.df is None) or (self.marker_properties['symbol'] != 'age-based'):
             t_list = []
             for t in self.time_to_integrate:
                 t_list.append(t)
@@ -86,12 +82,16 @@ class MovieStar:
                                 'dec':dec_int, 
                                 'distance':distance_int,
                                 'age':age_list,
-                                'group_name':group_name_list,
-                                'symbol':['circle']*len(t_list)
+                                'group_name':group_name_list
                                 })
         df_integrated = convert_icrs_galactic(df_integrated) # adds cartesian coords to dataframe
 
         return df_integrated
+    
+    def create_age_based_symbols(self):
+        self.df_integrated['symbol'] = ['circle']*len(self.df_integrated)
+        self.df_integrated.loc[self.df_integrated['age'] <= self.df_integrated['t'].abs(), 'symbol'] = 'circle-open'
+        
 
 
 class Movie:
@@ -133,17 +133,21 @@ class Movie:
             frame = {'data': [], 'name': str(t)}
 
             for movie_star in self.movie_stars:
+
                 df = movie_star.df_integrated # integrated dataframe of MovieStar
-                #assert df.t == self.time # make sure MovieStar instance has been integrated to match time-steps of movie
-                df_t = df.loc[df.t == t]
 
-                if movie_star.name != 'sun':
-                    df_t.loc[df_t.age <= np.abs(t), 'symbol'] = 'circle-open'
-                    hovertext = df_t['group_name'].values
+                if movie_star.marker_properties['symbol'] == 'age-based':
+                    movie_star.create_age_based_symbols()
+                    marker_style = df['symbol'].values
                 else:
-                    hovertext = ['Sun']
-                movie_star.marker_properties['symbol'] = df_t['symbol'].values
+                    marker_style = movie_star
 
+                try:
+                    hovertext = df['group_names'].values
+                except:
+                    hovertext = None
+
+                df_t = df.loc[df.t == t]
                 trace_3d_frame = go.Scatter3d(x = df_t.x.values,
                                               y = df_t.y.values, 
                                               z = df_t.z.values,
