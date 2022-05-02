@@ -6,34 +6,44 @@ import numpy as np
 import pandas as pd
 
 
+def get_layout():
+    layout = go.Layout(updatemenus = [dict(type="buttons", 
+                                        buttons = [dict(label="Play", method="animate", args = [None]),
+                                                    dict(label="Pause", method="animate", args = [[None], 
+                                                    {'frame':{'duration':0, 'redraw':False},
+                                                    'mode':'immediate',
+                                                    'transition':{'duration':0}}])],
+                                        direction='left',
+                                        pad={'r':10, 't':40},
+                                        showactive=False,
+                                        x=0.58,
+                                        xanchor='right',
+                                        y=-0.15,
+                                        yanchor='top')],
+                        scene = dict(
+                                    aspectmode = 'manual',
+                                    aspectratio = dict(x=.8, y=1, z=.08),
+                                    xaxis = dict(range = [-2000, 6000], 
+                                                showgrid = False, 
+                                                zeroline = False),
+                                    yaxis = dict(range = [-8000, 2000], 
+                                                showgrid = False, 
+                                                zeroline = False),
+                                    zaxis = dict(range = [-400, 400], 
+                                                showgrid = False, 
+                                                zeroline = False)
+                                )
+                    )
+    return layout
 
-layout = go.Layout(updatemenus = [dict(type="buttons", 
-                                       buttons = [dict(label="Play", method="animate", args = [None]),
-                                                  dict(label="Pause", method="animate", args = [[None], 
-                                                  {'frame':{'duration':0, 'redraw':False},
-                                                   'mode':'immediate',
-                                                   'transition':{'duration':0}}])],
-                                       direction='left',
-                                       pad={'r':10, 't':40},
-                                       showactive=False,
-                                       x=0.58,
-                                       xanchor='right',
-                                       y=-0.15,
-                                       yanchor='top')],
-                    scene = dict(
-                                aspectmode = 'manual',
-                                aspectratio = dict(x=.8, y=1, z=.08),
-                                xaxis = dict(range = [-2000, 6000], 
-                                             showgrid = False, 
-                                             zeroline = False),
-                                yaxis = dict(range = [-8000, 2000], 
-                                             showgrid = False, 
-                                             zeroline = False),
-                                zaxis = dict(range = [-400, 400], 
-                                             showgrid = False, 
-                                             zeroline = False)
-                               )
-                  )
+
+
+    
+
+
+
+
+
 
 
 def extra_traces(figure):

@@ -29,7 +29,8 @@ class MovieStar:
         self.time_to_integrate = time_to_integrate
         self.marker_properties = marker_properties
 
-        if df is not None:
+        if df is None:
+            self.df = df
             self.orbit = orbit
         else:
             self.df = df.rename(columns = self.key_dict) # rename cols based on user-specification
@@ -57,15 +58,12 @@ class MovieStar:
         dec_int = self.orbit.dec(self.time_to_integrate*u.Myr).flatten()
         distance_int = self.orbit.dist(self.time_to_integrate*u.Myr).flatten()*1000
 
-        if (self.df is None) or (self.marker_properties['symbol'] != 'age-based'):
+        if (self.df is None) or ('group_name' not in self.df.columns):
             t_list = []
-            for t in self.time_to_integrate:
-                t_list.append(t)
-            df_integrated = pd.DataFrame({'t':t_list,
+            df_integrated = pd.DataFrame({'t':self.time_to_integrate,
                     'ra':ra_int, 
                     'dec':dec_int, 
-                    'distance':distance_int,
-                    'symbol':['circle']*len(t_list)})
+                    'distance':distance_int})
 
         else:
             group_name_list = []
@@ -84,7 +82,17 @@ class MovieStar:
                                 'age':age_list,
                                 'group_name':group_name_list
                                 })
+
         df_integrated = convert_icrs_galactic(df_integrated) # adds cartesian coords to dataframe
+
+
+
+
+
+
+
+
+
 
         return df_integrated
     
@@ -108,13 +116,13 @@ class Movie:
         self.create_sun_orbit()
         self.movie_stars.append(self.sun)
 
-        figure = {
+        self.figure = {
             'data': [],
             'layout': {},
             'frames': [],
             'config': {'scrollzoom': True}
         }
-        sliders_dict = {
+        self.sliders_dict = {
             'yanchor': 'top',
             'xanchor': 'left',
             'transition': {'duration': 2, 'easing': 'bounce-in'},
@@ -127,80 +135,99 @@ class Movie:
             'steps': []
         }
 
-        #figure['layout'] = plotly_layout.layout
+        self.generate_frames() # generates frames for each timestep and calls 'generate_frame_layout'
+
+        self.figure['data'] = self.figure['frames'][0]['data']
+        self.figure['layout'] = self.figure['frames'][0]['layout']
+        self.figure['layout']['sliders'] = [self.sliders_dict]
+        self.figure['layout']['template'] = 'plotly_dark'
+        fig = go.Figure(self.figure) 
+        fig = plotly_layout.extra_traces(fig)
+        fig.write_html(self.movie_save_path, auto_open = False)
+        print('Movie Created')
+   
+   
+    def generate_frames(self):
 
         for t in self.time:
             frame = {'data': [], 'name': str(t)}
-
+            
             for movie_star in self.movie_stars:
 
                 df = movie_star.df_integrated # integrated dataframe of MovieStar
 
                 if movie_star.marker_properties['symbol'] == 'age-based':
                     movie_star.create_age_based_symbols()
-                    marker_style = df['symbol'].values
-                else:
-                    marker_style = movie_star
+                    movie_star.marker_properties['symbol'] = df['symbol'].values
 
-                try:
+                if 'group_names' in df.columns:
                     hovertext = df['group_names'].values
-                except:
+                else:
                     hovertext = None
 
                 df_t = df.loc[df.t == t]
                 trace_3d_frame = go.Scatter3d(x = df_t.x.values,
-                                              y = df_t.y.values, 
-                                              z = df_t.z.values,
-                                              mode = 'markers',
-                                              marker = movie_star.marker_properties,
-                                              line = dict(width = 0),
-                                              hovertext = hovertext,
-                                              name = movie_star.name
-                                             )
+                                                y = df_t.y.values, 
+                                                z = df_t.z.values,
+                                                mode = 'markers',
+                                                marker = movie_star.marker_properties,
+                                                line = dict(width = 0),
+                                                hovertext = hovertext,
+                                                name = movie_star.name
+                                                )
                 frame['data'].append(trace_3d_frame)
+                frame['layout'] = self.generate_frame_layout(t)
 
-            x_min = self.sun.df_integrated.loc[self.sun.df_integrated.t == t].x.iloc[0] - 1000
-            x_max = self.sun.df_integrated.loc[self.sun.df_integrated.t == t].x.iloc[0] + 1000
-            y_min = self.sun.df_integrated.loc[self.sun.df_integrated.t == t].y.iloc[0] - 1000
-            y_max = self.sun.df_integrated.loc[self.sun.df_integrated.t == t].y.iloc[0] + 1000
 
-            frame['layout'] = go.Layout(scene = dict(
-                            aspectmode = 'manual',
-                            aspectratio = dict(x=1., y=1., z=.4),
-                            xaxis = dict(range = [x_min, x_max], 
-                                            showgrid = False, 
-                                            zeroline = False),
-                            yaxis = dict(range = [y_min, y_max], 
-                                            showgrid = False, 
-                                            zeroline = False),
-                            zaxis = dict(range = [-400, 400], 
-                                            showgrid = False, 
-                                            zeroline = False)
-                            ))
 
-            figure['frames'].append(go.Frame(frame))
+            self.figure['frames'].append(go.Frame(frame))
             slider_step = {'args': [
                 [t],
                 {'frame': {'duration': 5, 'redraw': True},
                 'mode': 'immediate',
             'transition': {'duration': 100}}
             ],
-            'label': np.round(t,2),
+            'label': np.round(t,1),
             'name':'Time',
             'method': 'animate'
             }
-            sliders_dict['steps'].append(slider_step)
-        figure['data'] = figure['frames'][0]['data']
-        figure['layout'] = figure['frames'][0]['layout']
-        figure['layout']['sliders'] = [sliders_dict]
-        figure['layout']['template'] = 'plotly_dark'
-        fig = go.Figure(figure) 
-        fig = plotly_layout.extra_traces(fig)
-        fig.write_html(self.movie_save_path, auto_open = False)
-        print('Movie Created')
+            self.sliders_dict['steps'].append(slider_step)
+
+    def generate_frame_layout(self, t):
+
+        x_min = self.sun.df_integrated.loc[self.sun.df_integrated.t == t].x.iloc[0] - 1000
+        x_max = self.sun.df_integrated.loc[self.sun.df_integrated.t == t].x.iloc[0] + 1000
+        y_min = self.sun.df_integrated.loc[self.sun.df_integrated.t == t].y.iloc[0] - 1000
+        y_max = self.sun.df_integrated.loc[self.sun.df_integrated.t == t].y.iloc[0] + 1000
+
+        layout = go.Layout(
+                            scene = dict(
+                                aspectmode = 'manual',
+                                aspectratio = dict(x=1., y=1., z=.4),
+                                xaxis = dict(range = [x_min, x_max], 
+                                                showgrid = False, 
+                                                zeroline = False),
+                                yaxis = dict(range = [y_min, y_max], 
+                                                showgrid = False, 
+                                                zeroline = False),
+                                zaxis = dict(range = [-400, 400], 
+                                                showgrid = False, 
+                                                zeroline = False)
+                                )
+                            )
+        return layout
 
 
 
     def create_sun_orbit(self):
+
         sun_marker_props = {'size' : 5, 'color' : 'yellow', 'opacity' : 1., 'symbol' : 'circle'}
-        self.sun = MovieStar(name = 'sun', time_to_integrate = self.time, marker_properties=sun_marker_props)
+
+        orbit_sun = Orbit([0 * u.deg, 0 * u.deg, 0 * u.pc, 0 * u.mas / u.yr, 0 * u.mas / u.yr, 0 * u.km / u.s],
+             lb=False, uvw=False, radec=True,
+             ro=Galactocentric.galcen_distance,
+             zo=Galactocentric.z_sun,
+             vo=Galactocentric.galcen_v_sun.d_y - GalacticLSR.v_bary.d_y,
+             solarmotion=u.Quantity([-GalacticLSR.v_bary.d_x, GalacticLSR.v_bary.d_y, GalacticLSR.v_bary.d_z]))
+
+        self.sun = MovieStar(name = 'Sun', orbit = orbit_sun, time_to_integrate = self.time, marker_properties=sun_marker_props)

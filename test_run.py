@@ -46,6 +46,7 @@ open_clusters_old = movie_stars.MovieStar(name = 'Open Clusters > 20 Myr',
 # ------------ Kerr+2021 --------------
 
 
+
 movie_save_path = '/Users/cam/Desktop/astro_research/radcliffe/galactic_motions_movie_1.html'
 data_list = [open_clusters_young, open_clusters_old]
 movie = movie_stars.Movie(movie_stars = data_list, time = time_to_integrate, movie_save_path=movie_save_path)
