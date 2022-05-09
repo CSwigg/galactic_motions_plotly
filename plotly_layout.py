@@ -73,7 +73,7 @@ def extra_traces(figure):
                                             symbol = 'circle',
                                             opacity = .2
                                         ),
-                            visible = 'legendonly',
+                            #visible = 'legendonly',
                             hovertext = df_zucker['name'].values,
                             name = 'Zucker Clouds'
                             )
