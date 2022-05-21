@@ -6,53 +6,14 @@ import numpy as np
 import pandas as pd
 
 
-def get_layout():
-    layout = go.Layout(updatemenus = [dict(type="buttons", 
-                                        buttons = [dict(label="Play", method="animate", args = [None]),
-                                                    dict(label="Pause", method="animate", args = [[None], 
-                                                    {'frame':{'duration':0, 'redraw':False},
-                                                    'mode':'immediate',
-                                                    'transition':{'duration':0}}])],
-                                        direction='left',
-                                        pad={'r':10, 't':40},
-                                        showactive=False,
-                                        x=0.58,
-                                        xanchor='right',
-                                        y=-0.15,
-                                        yanchor='top')],
-                        scene = dict(
-                                    aspectmode = 'manual',
-                                    aspectratio = dict(x=.8, y=1, z=.08),
-                                    xaxis = dict(range = [-2000, 6000], 
-                                                showgrid = False, 
-                                                zeroline = False),
-                                    yaxis = dict(range = [-8000, 2000], 
-                                                showgrid = False, 
-                                                zeroline = False),
-                                    zaxis = dict(range = [-400, 400], 
-                                                showgrid = False, 
-                                                zeroline = False)
-                                )
-                    )
-    return layout
-
-
-
-    
-
-
-
-
-
-
 
 def extra_traces(figure):
     df_zucker = pd.read_csv('/Users/cam/Downloads/clouds_galactic.csv')
-    R_1 = -6.1*np.ones(500)
-    R_2 = -8.1*np.ones(500)
-    R_3 = -10.1*np.ones(500)
-    phi = np.linspace(-90,90,500)
-    z = np.zeros(500)
+    R_1 = -6.1*np.ones(1000)
+    R_2 = -8.1*np.ones(1000)
+    R_3 = -10.1*np.ones(1000)
+    phi = np.linspace(-180,180,1000)
+    z = np.zeros(1000)
     gc_line_1 = Galactocentric(rho=R_1*u.kpc, phi=phi*u.deg, z=z*u.pc, representation_type = 'cylindrical')
     gc_line_2 = Galactocentric(rho=R_2*u.kpc, phi=phi*u.deg, z=z*u.pc, representation_type = 'cylindrical')
     gc_line_3 = Galactocentric(rho=R_3*u.kpc, phi=phi*u.deg, z=z*u.pc, representation_type = 'cylindrical')
@@ -71,9 +32,9 @@ def extra_traces(figure):
                             marker = dict(size = 2,
                                             color = 'red',
                                             symbol = 'circle',
-                                            opacity = .2
+                                            opacity = 1.
                                         ),
-                            #visible = 'legendonly',
+                            visible = 'legendonly',
                             hovertext = df_zucker['name'].values,
                             name = 'Zucker Clouds'
                             )
@@ -81,7 +42,7 @@ def extra_traces(figure):
                                     y = gc_lines.v.value*1000,
                                     z = gc_lines.w.value*1000,
                                     mode = 'markers',
-                                    marker = dict(size = 1.,
+                                    marker = dict(size = 1.5,
                                                 color = 'white',
                                                 symbol = 'circle',
                                                 opacity = 1.
