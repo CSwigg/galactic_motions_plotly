@@ -29,10 +29,10 @@ def extra_traces(figure):
                             y = df_zucker.Y,
                             z = df_zucker.Z,
                             mode = 'markers',
-                            marker = dict(size = 2,
+                            marker = dict(size = 5,
                                             color = 'red',
                                             symbol = 'circle',
-                                            opacity = 1.
+                                            opacity = .2
                                         ),
                             visible = 'legendonly',
                             hovertext = df_zucker['name'].values,

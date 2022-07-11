@@ -68,7 +68,7 @@ class MovieStar:
         -------
         _type_
             _description_
-        """        
+        """
         if self.orbit is None:
             icrs = SkyCoord(ra=self.df.ra.values*u.deg,
                             dec=self.df.dec.values*u.deg,
@@ -94,6 +94,12 @@ class MovieStar:
                                           'distance': distance_int})
 
         else:
+            # TODO: make this for-loop more flexible using dictionary
+
+            group_name_list = []
+            age_list = []
+            t_list = []
+
             group_name_list = []
             age_list = []
             t_list = []
@@ -111,25 +117,44 @@ class MovieStar:
                                           'group_name': group_name_list
                                           })
 
+            if self.marker_properties['size'] == 'size-based':
+                size_list = []
+                for n in self.df.n.values:
+                    if n > 45:
+                        n = 100  # create max of size scale
+                    if n < 8:
+                        n = 2  # create min of size scale
+                    else:
+                        n = 5
+                    for t in self.time_to_integrate:
+                        size_list.append(n)
+
+                df_integrated['size'] = size_list
+
         # adds cartesian coords to dataframe
         df_integrated = convert_icrs_galactic(df_integrated)
         return df_integrated
 
     def create_age_based_symbols(self):
         """ 
-        """        
+        """
         self.df_integrated['symbol'] = ['circle']*len(self.df_integrated)
-        self.df_integrated['size'] = [self.marker_properties['size']]*len(self.df_integrated)
-        #self.df_integrated.loc[self.df_integrated['age'] <=
+
+        if self.marker_properties['size'] != 'size-based':
+            self.df_integrated['size'] = [
+                self.marker_properties['size']]*len(self.df_integrated)
+
+        # self.df_integrated.loc[self.df_integrated['age'] <=
         #                       self.df_integrated['t'].abs(), 'symbol'] = 'circle-open'
         self.df_integrated.loc[self.df_integrated['age'] <=
-                        self.df_integrated['t'].abs(), 'size'] = 0.00001
+                               self.df_integrated['t'].abs(), 'size'] = 0.00001
 
 
 class Movie:
     """ Class which encapsulates and controls plotly animation
     """
-    def __init__(self, movie_stars: dict, time: np.ndarray, movie_save_path: str, xyz_ranges = [1500, 1500, 400], center_star = 'Sun', annotations = None):
+
+    def __init__(self, movie_stars: dict, time: np.ndarray, movie_save_path: str, xyz_ranges=[1500, 1500, 400], center_star='Sun', annotations=None):
         """ Initalize Movie class
 
         Parameters
@@ -140,7 +165,7 @@ class Movie:
             should be same as time_to_integrate in MovieStar class
         movie_save_path : str
             path to save animation as html file
-        """        
+        """
         self.movie_stars = movie_stars  # list of MovieStar instances
         self.movie_save_path = movie_save_path
         self.time = time
@@ -180,25 +205,34 @@ class Movie:
         self.figure['data'] = self.figure['frames'][0]['data']
         self.figure['layout'] = self.figure['frames'][0]['layout']
 
-        self.figure['layout']['updatemenus'] = [dict(type="buttons", 
-                                       buttons = [dict(label="Play", method="animate", args = [None]),
-                                                  dict(label="Pause", method="animate", args = [[None], 
-                                                  {'frame':{'duration':50, 'redraw':False},
-                                                   'mode':'immediate',
-                                                   'transition':{'duration':10}}])],
-                                       direction='left',
-                                       pad={'r':10, 't':40},
-                                       showactive=False,
-                                       x=0.58,
-                                       xanchor='right',
-                                       y=-0.15,
-                                       yanchor='top')]
+        self.figure['layout']['updatemenus'] = [dict(type="buttons",
+                                                     buttons=[dict(label="Play", method="animate", args=[None]),
+                                                              dict(label="Pause", method="animate", args=[[None],
+                                                                                                          {'frame': {'duration': 50, 'redraw': False},
+                                                                                                           'mode': 'immediate',
+                                                                                                           'transition': {'duration': 10}}])],
+                                                     direction='left',
+                                                     pad={'r': 10, 't': 40},
+                                                     showactive=False,
+                                                     x=0.58,
+                                                     xanchor='right',
+                                                     y=-0.15,
+                                                     yanchor='top')]
 
         self.figure['layout']['scene_camera'] = dict(up=dict(x=0, y=1, z=0),
-                                                     center=dict(x=0, y=0, z=0),
+                                                     center=dict(
+                                                         x=0, y=0, z=0),
                                                      eye=dict(x=0., y=-.5, z=0.8))
         self.figure['layout']['dragmode'] = 'turntable'
-                                                     
+        self.figure['layout']['legend'] = dict(x=0,
+                                               y=1.,
+                                               font=dict(size=10,
+                                                         family='Verdana'
+                                                         ),
+                                               itemsizing='constant',
+                                               bgcolor='rgba(0,0,0,0)'
+                                               )
+
         self.figure['layout']['sliders'] = [self.sliders_dict]
         self.figure['layout']['template'] = 'plotly_dark'
         fig = go.Figure(self.figure)
@@ -207,12 +241,13 @@ class Movie:
         print('Movie Created!')
 
     def generate_frames(self):
-    
+
         for movie_star in self.movie_stars:
+            # if movie_star.marker_properties['size'] == 'size-based':
+            #     marker_props['size'] = df_t['size'].values/20
             if movie_star.marker_properties['symbol'] == 'age-based':
                 movie_star.create_age_based_symbols()
-                 
-        
+
         for t in self.time:
             frame = {'data': [], 'name': str(t)}
             for movie_star in self.movie_stars:
@@ -224,13 +259,14 @@ class Movie:
                 if movie_star.marker_properties['symbol'] == 'age-based':
                     marker_props['symbol'] = df_t['symbol'].values
                     marker_props['size'] = df_t['size'].values
+                    if movie_star.marker_properties['size'] == 'size-based':
+                        marker_props['size'] = marker_props['size']
 
                 if 'group_name' in df_t.columns:
                     hovertext = df_t['group_name'].values
                 else:
                     hovertext = None
 
-                
                 trace_3d_frame = go.Scatter3d(x=df_t.x.values,
                                               y=df_t.y.values,
                                               z=df_t.z.values,
@@ -257,22 +293,21 @@ class Movie:
             self.sliders_dict['steps'].append(slider_step)
 
     def generate_frame_layout(self, t):
-        
+
         x_box_half_size = self.xyz_ranges[0]/2
         y_box_half_size = self.xyz_ranges[1]/2
         z_box_half_size = self.xyz_ranges[2]/2
 
         largest_box_size = max(self.xyz_ranges)
 
-        for ms in self.movie_stars: # select the stars to be centered on
+        for ms in self.movie_stars:  # select the stars to be centered on
             if ms.name == self.center_star:
                 df_integrated = ms.df_integrated
 
         layout_annotations = []
         if self.annotations is not None:
-            for annotation in self.annotations: # enter annotations
+            for annotation in self.annotations:  # enter annotations
                 layout_annotations.append(annotation)
-
 
         x_min = df_integrated.loc[df_integrated.t ==
                                   t].x.iloc[0] - x_box_half_size
@@ -281,43 +316,44 @@ class Movie:
         y_min = df_integrated.loc[df_integrated.t ==
                                   t].y.iloc[0] - y_box_half_size
         y_max = df_integrated.loc[df_integrated.t ==
-                                           t].y.iloc[0] + y_box_half_size
+                                  t].y.iloc[0] + y_box_half_size
 
         layout = go.Layout(
             scene=dict(
                 aspectmode='manual',
-                aspectratio=dict(x=x_box_half_size/largest_box_size, y=y_box_half_size/largest_box_size, z=z_box_half_size/largest_box_size),
+                aspectratio=dict(x=x_box_half_size/largest_box_size, y=y_box_half_size /
+                                 largest_box_size, z=1.5*z_box_half_size/largest_box_size),
                 xaxis=dict(range=[x_min, x_max],
                            showgrid=False,
                            zeroline=False,
-                           nticks = 3,
-                           showline = True,
-                           linecolor = 'white',
-                           linewidth = 3,
-                           title = dict(text = 'X (pc)')
+                           nticks=3,
+                           showline=True,
+                           linecolor='white',
+                           linewidth=3,
+                           title=dict(text='X (pc)')
                            ),
                 yaxis=dict(range=[y_min, y_max],
                            showgrid=False,
                            zeroline=False,
-                           nticks = 3,
-                           showline = True,
-                           linecolor = 'white',
-                           linewidth = 3,
-                           title = dict(text = 'Y (pc)')
+                           nticks=3,
+                           showline=True,
+                           linecolor='white',
+                           linewidth=3,
+                           title=dict(text='Y (pc)')
                            ),
                 zaxis=dict(range=[-z_box_half_size, z_box_half_size],
                            showgrid=False,
                            zeroline=False,
-                           nticks = 3,
-                           showline = True,
-                           linecolor = 'white',
-                           linewidth = 3,
-                           title = dict(text = 'Z (pc)')
+                           nticks=3,
+                           showline=True,
+                           linecolor='white',
+                           linewidth=3,
+                           title=dict(text='Z (pc)')
                            ),
-                annotations = layout_annotations
-                           )
+                annotations=layout_annotations
             )
-        
+        )
+
         return layout
 
     def create_sun_orbit(self):
@@ -334,8 +370,7 @@ class Movie:
 
         sun = MovieStar(name='Sun', orbit=orbit_sun,
                              time_to_integrate=self.time, marker_properties=sun_marker_props)
-        
+
         return sun
 
     # def create_anotations(self):
-
