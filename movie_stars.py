@@ -8,12 +8,12 @@ import galpy
 from galpy.orbit import Orbit
 from galpy.potential import MWPotential2014
 from galpy.potential import plotRotcurve
-from galpy.potential import NFWPotential, HernquistPotential, MiyamotoNagaiPotential
+from galpy.potential import NFWPotential, HernquistPotential, MiyamotoNagaiPotential, NonInertialFrameForce
 from astropy.io import fits
 import plotly.graph_objects as go
 from astropy import coordinates
 
-from conversion_functions import convert_icrs_galactic
+from conversion_functions import convert_icrs_galactic, coordFIX_to_coordROT
 import plotly_extra
 
 default_marker_properties = dict(color='white', size=4)
@@ -32,6 +32,7 @@ class MovieStar:
                  marker_properties=default_marker_properties,
                  disappear=True,
                  visible='legendonly'):
+
         """ Initialize MovieStar 
 
         Parameters
@@ -108,8 +109,8 @@ class MovieStar:
                 dec_int,
                 'distance':
                 distance_int,
-                'group_name': ['Sun'] * len(distance_int),
-                'age': [4600]*len(distance_int)
+            'group_name': ['Sun'] * len(distance_int),
+            'age': [4600]*len(distance_int)
             })
 
         else:
@@ -154,6 +155,8 @@ class MovieStar:
 
         # adds cartesian coords to dataframe
         df_integrated = convert_icrs_galactic(df_integrated)
+        
+        #df_integrated = coordFIX_to_coordROT(df_integrated) # NOTE: converts into rotating coordinate frame
         return df_integrated
 
     def create_age_based_symbols(self):
@@ -170,11 +173,16 @@ class MovieStar:
                 self.df_integrated['age'] <= self.df_integrated['t'].abs(),
                 'size'] = .000001
         else:
+            #if np.any(self.df_integrated['t'].values) < 0.:
+                # self.df_integrated.loc[
+                #     self.df_integrated['age'] <= self.df_integrated['t'].abs(),
+                #     'size'] = self.df_integrated.loc[
+                #         self.df_integrated['age'] <= self.df_integrated['t'].abs(),
+                #         'size'] / 1
             self.df_integrated.loc[
                 self.df_integrated['age'] <= self.df_integrated['t'].abs(),
-                'size'] = self.df_integrated.loc[
-                    self.df_integrated['age'] <= self.df_integrated['t'].abs(),
-                    'size'] / 3
+                'symbol'] = 'circle-open'
+                
 
 
 class Movie:
@@ -459,30 +467,6 @@ class Movie:
                         linewidth=3,
                         title=dict(text='Z (pc)')),
             annotations=layout_annotations))
-
-            #layout = go.Layout(
-            #  scene=dict(aspectmode='manual',
-            #              aspectratio=dict(x=x_box_half_size / largest_box_size,
-            #                      y=y_box_half_size / largest_box_size),
-            #              xaxis=dict(range=[x_min, x_max],
-            #                          autorange = False,
-            #                          showgrid=False,
-            #                          zeroline=False,
-            #                          nticks=3,
-            #                          showline=True,
-            #                          linecolor='white',
-            #                          linewidth=3,
-            #                          title=dict(text='X (pc)')),
-            #              yaxis=dict(range=[y_min, y_max],
-            #                          autorange = False,
-            #                          showgrid=False,
-            #                          zeroline=False,
-            #                          nticks=3,
-            #                          showline=True,
-            #                          linecolor='white',
-            #                          linewidth=3,
-            #                          title=dict(text='Y (pc)')),
-            #              annotations=layout_annotations))
 
         return layout
 
