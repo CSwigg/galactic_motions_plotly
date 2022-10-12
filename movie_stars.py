@@ -179,9 +179,10 @@ class MovieStar:
                 #     'size'] = self.df_integrated.loc[
                 #         self.df_integrated['age'] <= self.df_integrated['t'].abs(),
                 #         'size'] / 1
-            self.df_integrated.loc[
-                self.df_integrated['age'] <= self.df_integrated['t'].abs(),
-                'symbol'] = 'circle-open'
+            # self.df_integrated.loc[
+            #     self.df_integrated['age'] <= self.df_integrated['t'].abs(),
+            #     'symbol'] = 'circle-open'
+            pass
                 
 
 
