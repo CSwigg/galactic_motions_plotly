@@ -1,0 +1,19 @@
+trace_name : 'Maria Clusters < 25 Myr'
+file_name : '../data/maria_young.csv'
+key_dict : 
+    ra : ra
+    dec : dec
+    parallax : parallax
+    pmra : pmra
+    pmdec : pmdec
+    rv_weighted_med : radial_velocity
+    age_myr : age
+    cluster : group_name
+marker_properties :
+    size : 5.
+    color : red
+    opacity : .7
+    symbol : age-based
+    line : 
+        width : 0.
+points_disappear : True

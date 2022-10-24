@@ -1,0 +1,22 @@
+trace_name : 'Radcliffe Wave'
+file_name : '../data/RW_clusters_selection4.csv'
+
+key_dict : 
+    ra : ra   
+    dec : dec
+    parallax : parallax
+    pmra : pmra
+    pmdec : pmdec
+    rv_weighted_med : radial_velocity
+    age_myr : age
+    cluster : group_name
+
+marker_properties :
+    size : 11
+    color : "#FF4500"
+    opacity : .7
+    symbol : age-based
+    line : 
+        width : 0.
+
+points_disappear : False
