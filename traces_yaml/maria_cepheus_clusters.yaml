@@ -1,5 +1,5 @@
 trace_name : 'Cepheus Spur'
-file_name : '../data/maria_cepheus.csv'
+file_name : 'data/maria_cepheus_clusters.csv'
 key_dict : 
     ra : ra
     dec : dec

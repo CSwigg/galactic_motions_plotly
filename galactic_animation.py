@@ -18,7 +18,7 @@ maria_cepheus = MovieStar.from_yaml(yaml_file_name = 'maria_cepheus_clusters.yam
 traces_list = [radcliffe_wave, maria_split, maria_cepheus, maria_young_clusters, maria_older_clusters, maria_feedback_clusters]
 
 movie_save_path = '/Users/cam/Desktop/astro_research/radcliffe/movies/gal_mov_test_refactored.html'
-movie = movie_stars.Movie(movie_stars=traces_list,
+movie = Movie(movie_stars=traces_list,
                           time=time_to_integrate,
                           movie_save_path=movie_save_path,
                           center_star='Sun',

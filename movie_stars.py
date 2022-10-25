@@ -78,7 +78,10 @@ class MovieStar:
         with open(yaml_file_name, 'r') as stream:
             yaml_data = yaml.safe_load(stream)
 
-        return cls(name=yaml_data['trace_name'],
+        df = pd.read_csv(yaml_data['file_name'])
+
+        return cls(df = df, 
+                   name=yaml_data['trace_name'],
                    key_dict=yaml_data['key_dict'],
                    marker_properties=yaml_data['marker_properties'],
                    disappear=yaml_data['points_disappear'],

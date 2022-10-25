@@ -1,5 +1,5 @@
 trace_name : 'Radcliffe Wave'
-file_name : '../data/RW_clusters_selection4.csv'
+file_name : 'data/RW_clusters_selection4.csv'
 
 key_dict : 
     ra : ra   

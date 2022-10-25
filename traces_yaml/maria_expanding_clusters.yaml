@@ -1,5 +1,5 @@
 trace_name : 'Maria Expanding Clusters'
-file_name : '../data/maria_clusters_feedback.csv'
+file_name : 'data/maria_clusters_feedback.csv'
 key_dict : 
     ra : ra
     dec : dec

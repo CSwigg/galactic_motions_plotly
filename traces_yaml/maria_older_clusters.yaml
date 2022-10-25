@@ -1,6 +1,5 @@
 trace_name : 'Maria Clusters 25 < Age < 60 Myr'
-
-file_name : '../data/maria_older.csv'
+file_name : 'data/maria_older.csv'
 
 key_dict : 
     ra : ra

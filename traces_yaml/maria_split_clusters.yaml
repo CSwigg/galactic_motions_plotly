@@ -1,5 +1,5 @@
 trace_name : 'The Split'
-file_name : '../data/maria_split_clusters.csv'
+file_name : 'data/maria_split_clusters.csv'
 key_dict : 
     ra : ra
     dec : dec
