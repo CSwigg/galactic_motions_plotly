@@ -1,0 +1,28 @@
+3d_galactic_slider : 
+    yanchor: top
+    xanchor: left
+    transition:
+        duration: 2
+        easing: bounce-in
+    pad: 
+        b: 0
+        t: 10
+        l: 190
+        r: 250
+    len: 0.9
+    currentvalue:
+        prefix: "Time (Myr): "
+        xanchor: center
+        offset: 20
+        font:
+            size: 18
+            color: white
+    x: 0.1
+    y: 0.
+    steps: []
+    tickcolor: white
+    ticklen: 1
+    font: 
+        color: black
+        size: 1
+

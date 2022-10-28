@@ -1,4 +1,5 @@
 import yaml
+import copy
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -80,7 +81,7 @@ class MovieStar:
 
         df = pd.read_csv(yaml_data['file_name'])
 
-        return cls(df = df, 
+        return cls(df=df,
                    name=yaml_data['trace_name'],
                    key_dict=yaml_data['key_dict'],
                    marker_properties=yaml_data['marker_properties'],
@@ -158,8 +159,7 @@ class MovieStar:
             })
 
         else:
-            # TODO: make this for-loop more flexible using dictionary
-
+            # TODO: make this for-loop more flexible using numpy raster
             group_name_list = []
             age_list = []
             t_list = []
@@ -246,6 +246,17 @@ class Movie:
         self.center_galactic = center_galactic
         self.add_extra_traces = add_extra_traces
 
+        # read from yaml files
+        layout_file = open_yaml('layout_yaml/3d_layout.yaml')
+        self.layout_dict = layout_file['3d_galactic_layout']
+        self.figure = layout_file['initial_figure']
+        self.slider_dict = open_yaml('layout_yaml/sliders.yaml')['3d_galactic_slider']
+        self.camera = open_yaml('layout_yaml/cameras.yaml')['3d_galactic_camera']
+
+        # setup initial layout/figure properties
+        #self.layout_dict['scene_camera'] = self.camera
+        self.figure['layout'] = self.layout_dict
+
     def make_movie(self):
         '''
         Generates movie of MovieStar intances, centered on the Sun's motion
@@ -253,80 +264,19 @@ class Movie:
         self.sun = self.create_sun_orbit()
         self.movie_stars.append(self.sun)
 
-        self.figure = {
-            'data': [],
-            'layout': {},
-            'frames': [],
-            'config': {
-                'scrollzoom': True
-            }
-        }
-
-        self.sliders_dict = {
-            'yanchor': 'top',
-            'xanchor': 'left',
-            'transition': {
-                'duration': 2,
-                'easing': 'bounce-in'
-            },
-            'pad': {
-                'b': 0,
-                't': 10,
-                'l': 190,
-                'r': 250
-            },
-            'len': 0.9,
-            'currentvalue': {
-                "prefix": "Time (Myr): ",
-                "xanchor": 'center',
-                'offset': 20,
-                "font": {
-                    "size": 18,
-                    'color': 'white'
-                }
-            },
-            'x': 0.1,
-            'y': 0,
-            'active': int(len(self.time_mirror) / 2),
-            'steps': [],
-            'tickcolor': 'white',
-            'ticklen': 1,
-            'font': {
-                'color': 'black',
-                'size': 1.
-            }
-        }
+        self.slider_dict['active'] = int(len(self.time_mirror) / 2)
 
         # generates frames for each timestep and calls 'generate_frame_layout'
         self.generate_frames()
+        #self.layout_dict['scene_camera'] = self.camera
 
         self.figure['data'] = self.figure['frames'][int(
             len(self.time_mirror) / 2)]['data']
         self.figure['layout'] = self.figure['frames'][int(
             len(self.time_mirror) / 2)]['layout']
-        self.figure['layout']['scene_camera'] = dict(up=dict(x=0, y=1, z=0),
-                                                     center=dict(x=0, y=0,
-                                                                 z=0),
-                                                     eye=dict(x=0.,
-                                                              y=-.5,
-                                                              z=0.8))
-        self.figure['layout']['dragmode'] = 'turntable'
-        self.figure['layout']['legend'] = dict(x=0,
-                                               y=1.,
-                                               font=dict(size=16,
-                                                         family='Verdana'),
-                                               itemsizing='constant',
-                                               bgcolor='rgba(0,0,0,0)')
+        self.figure['layout']['scene_camera'] = self.camera
 
-        self.figure['layout']['sliders'] = [self.sliders_dict]
-        self.figure['layout']['template'] = 'plotly_dark'
-        self.figure['layout']['sliders'][0][
-            'tickcolor'] = 'rgb(230,230,230)'  #or ‘rgb(235,235,235)’
-        #self.figure['layout'].updatemenus[0].buttons[0].args[1]["frame"]["duration"] = 100000
-        #self.figure['layout'].updatemenus[0].buttons[0].args[1]["transition"]["duration"] = 10000
-
-        # if self.add_extra_traces:
-        #     self.figure = plotly_extra.extra_traces(self.figure)
+        self.figure['layout']['sliders'] = [self.slider_dict]
 
         if self.movie_save_path is not None:
             fig = go.Figure(self.figure)
@@ -353,8 +303,6 @@ class Movie:
     def generate_frames(self):
 
         for movie_star in self.movie_stars:
-            # if movie_star.marker_properties['size'] == 'size-based':
-            #     marker_props['size'] = df_t['size'].values/20
             if movie_star.marker_properties['symbol'] == 'age-based':
                 movie_star.create_age_based_symbols()
 
@@ -374,9 +322,6 @@ class Movie:
 
                 if 'group_name' in df_t.columns:
                     hovertext = df_t['group_name']
-                    # df_t['age_str'] = df['age'].round(2).astype(str) + ' Myr'
-                    # df_t['group_name_str'] = df['group_name'].astype(str)
-                    # hovertext = df_t[['group_name_str', 'age_str']].agg(': '.join, axis=1)
                 else:
                     hovertext = None
 
@@ -410,7 +355,7 @@ class Movie:
                 'method':
                 'animate'
             }
-            self.sliders_dict['steps'].append(slider_step)
+            self.slider_dict['steps'].append(slider_step)
 
     def generate_frame_layout(self, t):
 
@@ -438,7 +383,8 @@ class Movie:
                                       t].y.iloc[0] - y_box_half_size
             y_max = df_integrated.loc[df_integrated.t ==
                                       t].y.iloc[0] + y_box_half_size
-
+            z_min = -z_box_half_size
+            z_max = z_box_half_size
         else:
             if self.center_galactic:
                 x_offset = 8300
@@ -451,37 +397,21 @@ class Movie:
             z_min = -z_box_half_size
             z_max = z_box_half_size
 
-        layout = go.Layout(
-            scene=dict(aspectmode='manual',
-                       aspectratio=dict(x=x_box_half_size / largest_box_size,
-                                        y=y_box_half_size / largest_box_size,
-                                        z=1.5 * z_box_half_size /
-                                        largest_box_size),
-                       xaxis=dict(range=[x_min, x_max],
-                                  showgrid=False,
-                                  zeroline=False,
-                                  nticks=3,
-                                  showline=True,
-                                  linecolor='white',
-                                  linewidth=3,
-                                  title=dict(text='X (pc)')),
-                       yaxis=dict(range=[y_min, y_max],
-                                  showgrid=False,
-                                  zeroline=False,
-                                  nticks=3,
-                                  showline=True,
-                                  linecolor='white',
-                                  linewidth=3,
-                                  title=dict(text='Y (pc)')),
-                       zaxis=dict(range=[-z_box_half_size, z_box_half_size],
-                                  showgrid=False,
-                                  zeroline=False,
-                                  nticks=3,
-                                  showline=True,
-                                  linecolor='white',
-                                  linewidth=3,
-                                  title=dict(text='Z (pc)')),
-                       annotations=layout_annotations))
+        
+
+        # Update for the user-input aspectratio
+        layout_dict_t = copy.deepcopy(self.layout_dict)
+        layout_dict_t['scene']['aspectratio']['x'] *= x_box_half_size/largest_box_size
+        layout_dict_t['scene']['aspectratio']['y'] *= y_box_half_size/largest_box_size
+        layout_dict_t['scene']['aspectratio']['z'] *= z_box_half_size/largest_box_size
+
+        # Update for the user-input ranges
+        layout_dict_t['scene']['xaxis']['range'] = [x_min, x_max]
+        layout_dict_t['scene']['yaxis']['range'] = [y_min, y_max]
+        layout_dict_t['scene']['zaxis']['range'] = [z_min, z_max]
+
+        layout_dict_t['scene']['annotations'] = layout_annotations
+        layout = go.Layout(layout_dict_t)
 
         return layout
 
@@ -516,3 +446,9 @@ class Movie:
                         marker_properties=sun_marker_props)
 
         return sun
+
+
+def open_yaml(filepath):
+    with open(filepath, 'r') as stream:
+        yaml_data = yaml.safe_load(stream)
+    return yaml_data

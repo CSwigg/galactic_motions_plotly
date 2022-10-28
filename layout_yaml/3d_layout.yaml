@@ -1,0 +1,55 @@
+initial_figure:
+    data: []
+    layout: None # modified
+    frames: []
+    config:
+        scrollzoom: True
+
+3d_galactic_layout:
+  scene:
+      aspectmode: manual
+      aspectratio: # factor controlling aspect stretch for each axis
+          x: 1 # modified in movie_stars.py
+          y: 1 # modified in movie_stars.py
+          z: 1 # modified in movie_stars.py
+      xaxis: 
+          range: None # modified in movie_stars.py
+          showgrid: False
+          zeroline: False
+          nticks: 3
+          showline: True
+          linecolor: white
+          linewidth: 3
+          title:
+              text: "X (pc)"
+      yaxis: 
+          range: None # modified in movie_stars.py
+          showgrid: False
+          zeroline: False
+          nticks: 3
+          showline: True
+          linecolor: white
+          linewidth: 3
+          title:
+              text: "Y (pc)"
+      zaxis: 
+          range: None # modified in movie_stars.py
+          showgrid: False
+          zeroline: False
+          nticks: 3
+          showline: True
+          linecolor: white
+          linewidth: 3
+          title:
+              text: "Z (pc)"
+  template: plotly_dark
+  dragmode: turntable
+  legend:
+      x: 0
+      y: 1
+      font:
+          size: 16
+          family: Verdana
+      itemsizing: constant
+      bgcolor: 'rgba(0,0,0,0)' # transparent legend
+          
