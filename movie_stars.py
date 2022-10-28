@@ -268,15 +268,13 @@ class Movie:
 
         # generates frames for each timestep and calls 'generate_frame_layout'
         self.generate_frames()
-        #self.layout_dict['scene_camera'] = self.camera
 
         self.figure['data'] = self.figure['frames'][int(
-            len(self.time_mirror) / 2)]['data']
+            len(self.time_mirror) / 2)]['data'] # sets initial figure frame
         self.figure['layout'] = self.figure['frames'][int(
-            len(self.time_mirror) / 2)]['layout']
-        self.figure['layout']['scene_camera'] = self.camera
-
-        self.figure['layout']['sliders'] = [self.slider_dict]
+            len(self.time_mirror) / 2)]['layout'] # sets initial figure frame layout
+        self.figure['layout']['scene_camera'] = self.camera # sets camera
+        self.figure['layout']['sliders'] = [self.slider_dict] # sets slider
 
         if self.movie_save_path is not None:
             fig = go.Figure(self.figure)
