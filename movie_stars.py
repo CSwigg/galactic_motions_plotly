@@ -33,7 +33,7 @@ class MovieStar:
                  key_dict=None,
                  marker_properties=default_marker_properties,
                  disappear=True,
-                 visible='legendonly'):
+                 visible=True):
         """ Initialize MovieStar 
 
         Parameters
@@ -58,7 +58,7 @@ class MovieStar:
             [np.flip(-1 * self.time_to_integrate[1:]), self.time_to_integrate])
         self.marker_properties = marker_properties
         self.disappear = disappear
-        self.visible = visible
+        self.visible = visible  # not being used currently
 
         if df is None:
             self.df = df
@@ -111,73 +111,41 @@ class MovieStar:
                             (u.km / u.s))
             self.orbit = Orbit(vxvv=icrs)
 
-        self.orbit.integrate(self.time_to_integrate * u.Myr,
-                             pot=MWPotential2014)
-        ra_int_forwards = self.orbit.ra(self.time_to_integrate * u.Myr)
-        dec_int_forwards = self.orbit.dec(self.time_to_integrate * u.Myr)
-        distance_int_forwards = self.orbit.dist(
-            self.time_to_integrate * u.Myr) * 1000
 
-        if self.name == 'Sun':
-            axis = 0
-        else:
-            axis = 1
-        self.orbit.integrate(-1 * self.time_to_integrate[1:] * u.Myr,
-                             pot=MWPotential2014)
-        ra_int_backwards = np.flip(self.orbit.ra(
-            -1 * self.time_to_integrate[1:] * u.Myr),
-                                   axis=axis)
-        dec_int_backwards = np.flip(self.orbit.dec(
-            -1 * self.time_to_integrate[1:] * u.Myr),
-                                    axis=axis)
-        distance_int_backwards = np.flip(
-            self.orbit.dist(-1 * self.time_to_integrate[1:] * u.Myr) * 1000,
-            axis=axis)
+        ra_int_f, dec_int_f, distance_int_f = integrate_orbit(
+            time=self.time_to_integrate, orbit=self.orbit, pot=MWPotential2014, flip = False)
+        ra_int_b, dec_int_b, distance_int_b = integrate_orbit(
+            time=-1 * self.time_to_integrate[1:],
+            orbit=self.orbit,
+            pot=MWPotential2014, flip = True)
 
-        ra_int = np.concatenate([ra_int_backwards, ra_int_forwards],
+        axis = len(np.shape(ra_int_f)) - 1
+        ra_int = np.concatenate([ra_int_b, ra_int_f],
                                 axis=axis).flatten()
-        dec_int = np.concatenate([dec_int_backwards, dec_int_forwards],
+        dec_int = np.concatenate([dec_int_b, dec_int_f],
                                  axis=axis).flatten()
         distance_int = np.concatenate(
-            [distance_int_backwards, distance_int_forwards],
+            [distance_int_b, distance_int_f],
             axis=axis).flatten()
 
-        if (self.df is None) or ('group_name' not in self.df.columns):
-            # This is specifically for integrating the Sun, but could be generalized in the future
-            t_list = []
-            df_integrated = pd.DataFrame({
-                't':
-                self.t_mirrored,
-                'ra':
-                ra_int,
-                'dec':
-                dec_int,
-                'distance':
-                distance_int,
-                'group_name': ['Sun'] * len(distance_int),
-                'age': [4600] * len(distance_int)
-            })
+        if (self.df is None):  # If Sun
+            t = self.t_mirrored
+            group_name = ['Sun'] * len(ra_int)
+            age = [4600] * len(ra_int)
+        else:  # For all other traces
+            t = np.tile(self.t_mirrored, len(self.df))
+            age = np.tile(self.df.age.values, len(self.t_mirrored))
+            group_name = np.tile(self.df.group_name.values,
+                                 len(self.t_mirrored))
 
-        else:
-            # TODO: make this for-loop more flexible using numpy raster
-            group_name_list = []
-            age_list = []
-            t_list = []
-            for name, age in zip(self.df.group_name.values,
-                                 self.df.age.values):
-                for t in self.t_mirrored:
-                    group_name_list.append(name)
-                    age_list.append(age)
-                    t_list.append(t)
-
-            df_integrated = pd.DataFrame({
-                't': t_list,
-                'ra': ra_int,
-                'dec': dec_int,
-                'distance': distance_int,
-                'age': age_list,
-                'group_name': group_name_list
-            })
+        df_integrated = pd.DataFrame({
+            't': t,
+            'ra': ra_int,
+            'dec': dec_int,
+            'distance': distance_int,
+            'age': age,
+            'group_name': group_name
+        })
 
         # adds cartesian coords to dataframe
         df_integrated = convert_icrs_galactic(df_integrated)
@@ -250,8 +218,10 @@ class Movie:
         layout_file = open_yaml('layout_yaml/3d_layout.yaml')
         self.layout_dict = layout_file['3d_galactic_layout']
         self.figure = layout_file['initial_figure']
-        self.slider_dict = open_yaml('layout_yaml/sliders.yaml')['3d_galactic_slider']
-        self.camera = open_yaml('layout_yaml/cameras.yaml')['3d_galactic_camera']
+        self.slider_dict = open_yaml(
+            'layout_yaml/sliders.yaml')['3d_galactic_slider']
+        self.camera = open_yaml(
+            'layout_yaml/cameras.yaml')['3d_galactic_camera']
 
         # setup initial layout/figure properties
         #self.layout_dict['scene_camera'] = self.camera
@@ -270,11 +240,12 @@ class Movie:
         self.generate_frames()
 
         self.figure['data'] = self.figure['frames'][int(
-            len(self.time_mirror) / 2)]['data'] # sets initial figure frame
+            len(self.time_mirror) / 2)]['data']  # sets initial figure frame
         self.figure['layout'] = self.figure['frames'][int(
-            len(self.time_mirror) / 2)]['layout'] # sets initial figure frame layout
-        self.figure['layout']['scene_camera'] = self.camera # sets camera
-        self.figure['layout']['sliders'] = [self.slider_dict] # sets slider
+            len(self.time_mirror) /
+            2)]['layout']  # sets initial figure frame layout
+        self.figure['layout']['scene_camera'] = self.camera  # sets camera
+        self.figure['layout']['sliders'] = [self.slider_dict]  # sets slider
 
         if self.movie_save_path is not None:
             fig = go.Figure(self.figure)
@@ -284,7 +255,7 @@ class Movie:
         else:
             return self.figure
 
-        print('Movie Created!')
+        print('Movie Created')
 
     def create_scatter(self, movie_star, df, marker_props, hovertext):
 
@@ -395,13 +366,14 @@ class Movie:
             z_min = -z_box_half_size
             z_max = z_box_half_size
 
-        
-
         # Update for the user-input aspectratio
         layout_dict_t = copy.deepcopy(self.layout_dict)
-        layout_dict_t['scene']['aspectratio']['x'] *= x_box_half_size/largest_box_size
-        layout_dict_t['scene']['aspectratio']['y'] *= y_box_half_size/largest_box_size
-        layout_dict_t['scene']['aspectratio']['z'] *= z_box_half_size/largest_box_size
+        layout_dict_t['scene']['aspectratio'][
+            'x'] *= x_box_half_size / largest_box_size
+        layout_dict_t['scene']['aspectratio'][
+            'y'] *= y_box_half_size / largest_box_size
+        layout_dict_t['scene']['aspectratio'][
+            'z'] *= z_box_half_size / largest_box_size
 
         # Update for the user-input ranges
         layout_dict_t['scene']['xaxis']['range'] = [x_min, x_max]
@@ -446,7 +418,26 @@ class Movie:
         return sun
 
 
+# ---- Helper Functions -----
 def open_yaml(filepath):
     with open(filepath, 'r') as stream:
         yaml_data = yaml.safe_load(stream)
     return yaml_data
+
+
+def integrate_orbit(time, orbit, pot, flip = False):
+    time = time * u.Myr
+
+    orbit.integrate(time, pot=pot)
+    ra =orbit.ra(time)
+    dec =orbit.dec(time)
+    distance =orbit.dist(time)*1000
+
+    if flip: # flips the time order of the returned ra, dec, distance values
+        axis = len(np.shape(ra)) - 1
+        ra = np.flip(ra, axis = axis)
+        dec = np.flip(dec, axis = axis)
+        distance = np.flip(distance, axis = axis)
+
+
+    return (ra, dec, distance)

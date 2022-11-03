@@ -45,36 +45,6 @@ def extra_traces():
                                  ['R = 8 kpc'] * len(gc_line_2),
                                  ['R = 10 kpc'] * len(gc_line_3)])
 
-
-    # downscale = 3
-    # downcube = transform.pyramid_reduce(data,
-    #                                     downscale=downscale,
-    #                                     multichannel=False)
-    # x_origin, y_origin, z_origin = header['CRVAL1'], header['CRVAL2'], header[
-    #     'CRVAL3']
-    # X, Y, Z = np.mgrid[x_origin:x_origin + header['NAXIS1']:10j,
-    #                 y_origin:y_origin + header['NAXIS2']:10j,
-    #                 z_origin:z_origin + header['NAXIS3']:10j]
-    # vol_plot = go.Volume(
-    #     x=X.flatten().astype(int),
-    #     y=Y.flatten().astype(int),
-    #     z=Z.flatten().astype(int),
-    #     value=downcube.T.flatten(),
-    #     flatshading=True,
-    #     opacity=0.5,
-    #     #isomin=0.,
-    #     #isomax=0.01,
-    #     showscale=False,
-    #     colorscale=[[0, 'white'], [1., 'gray']],
-    #     opacityscale='max',
-    #     reversescale=False,
-    #     surface=dict(show=True, count=5),
-    #     spaceframe=dict(show=True),  #,
-    #     contour=dict(show=False, width=4),
-    #     name = 'Vergely Dust'
-    #     )
-    #traces.append(vol_plot)
-
     scatter_zucker = go.Scatter3d(x=df_zucker.X,
                                   y=df_zucker.Y,
                                   z=df_zucker.Z,

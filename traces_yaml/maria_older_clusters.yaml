@@ -19,4 +19,5 @@ marker_properties :
     line : 
         width : 0
 
+visible : 'legendonly'
 points_disappear : True
