@@ -134,7 +134,7 @@ class MovieStar:
             age = [4600] * len(ra_int)
         else:  # For all other traces
             t = np.tile(self.t_mirrored, len(self.df))
-            age = np.tile(self.df.age.values, len(self.t_mirrored))
+            age = np.tile(self.df.age.values, len(self.t_mirrored)).T
             group_name = np.tile(self.df.group_name.values,
                                  len(self.t_mirrored))
 
