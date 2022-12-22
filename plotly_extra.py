@@ -6,13 +6,14 @@ from skimage import transform
 import astropy.units as u
 import numpy as np
 import pandas as pd
+from skimage import transform
+import math
 
 df_zucker = pd.read_csv('/Users/cam/Downloads/clouds_galactic.csv')
 
 #we are going to downscale to make the file smaller so it's more easily saveable
 data, header = fits.getdata("/Users/cam/Downloads/vergely_3D_Dust.fits",
                             header=True)
-
 
 
 def extra_traces():
@@ -66,6 +67,73 @@ def extra_traces():
                                                  opacity=1.),
                                      name='Constant GC Lines',
                                      hovertext=gc_line_ht)
+
+
+    dust = vergely_dust()
+
+
     traces.append(scatter_zucker)
     traces.append(scatter_gc_line_1)
+    traces.append(dust)
+
+
     return traces
+
+
+def vergely_dust():
+
+    data, header = fits.getdata("/Users/cam/Downloads/vergely_3D_Dust.fits",
+                                header=True)
+    downscale = 6.
+    downcube = transform.pyramid_reduce(data,
+                                        downscale=downscale,
+                                        multichannel=False)
+    x_origin, y_origin, z_origin = header['CRVAL1'], header['CRVAL2'], header[
+        'CRVAL3']
+
+    x_y_step = math.ceil(601 / downscale)
+    z_step = math.ceil(81 / downscale)
+
+    X, Y, Z = np.mgrid[x_origin:3000:x_y_step * 1j,
+                       y_origin:3000:x_y_step * 1j, z_origin:400:z_step * 1j]
+    X = X.flatten().astype(int)
+    Y = Y.flatten().astype(int)
+    Z = Z.flatten().astype(int)
+    downcube = downcube.T.flatten()
+
+    cut_value = 2500
+    x_y_condition = np.where((X >= -cut_value) & (X <= cut_value) & (Y >= -cut_value)
+                             & (Y <= cut_value))
+    X_cut = X[x_y_condition]
+    Y_cut = Y[x_y_condition]
+    Z_cut = Z[x_y_condition]
+    downcube_cut = downcube[x_y_condition]
+
+    vol_plot = go.Volume(
+        x=X_cut,
+        y=Y_cut,
+        z=Z_cut,
+        value=downcube_cut,
+        flatshading=True,
+        opacity=.7,
+        #isomin=np.percentile(downcube, 25),
+        #isomax=np.percentile(downcube, 75),
+        #isomin=150e-6,
+        #isomax=1e-4,
+        isomin=500e-6,
+        showscale=False,
+        colorscale='gray',
+        opacityscale='max',
+        #opacityscale = [[0, 1], [0.5, 0.2], [1, 1]],
+        reversescale=True,
+        surface=dict(show=True, count=8),
+        spaceframe=dict(show=True),  #,
+        contour=dict(show=False, width=8),
+        hoverinfo='skip',
+        visible = 'legendonly',
+        name = 'Vergely+2022 Dust',
+        showlegend = True
+        )
+
+
+    return vol_plot

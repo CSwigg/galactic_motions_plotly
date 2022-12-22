@@ -1,5 +1,5 @@
-trace_name : 'The Split'
-file_name : 'data/maria_split_clusters.csv'
+trace_name : 'The Split (extended)'
+file_name : 'data/maria_clusters_split.csv'
 key_dict : 
     ra : ra
     dec : dec
@@ -10,10 +10,13 @@ key_dict :
     age_myr : age
     cluster : group_name
 marker_properties :
-    size : 11.
+    size : 8.
+    #color : '#7FFFD4'
+    #color : 'lightblue'
     color : '#7FFFD4'
     opacity : 1.
     symbol : age-based
     line : 
-        width : 0.
-points_disappear : False
+        width : 3.
+        color : '#7FFFD4'
+marker_behavior : "circle-open"

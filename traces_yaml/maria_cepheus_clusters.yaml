@@ -15,5 +15,6 @@ marker_properties :
     opacity : 1.
     symbol : age-based
     line : 
-        width : 0.
-points_disappear : False
+        width : 3.
+        color : '#87CEFA'
+marker_behavior : "circle-open"

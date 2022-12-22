@@ -1,5 +1,6 @@
 trace_name : 'Radcliffe Wave'
-file_name : 'data/RW_clusters_selection4.csv'
+file_name : 'data/maria_clusters_rw_joao.csv'
+  #file_name : 'data/maria_clusters_rw_cam.csv'
 
 key_dict : 
     ra : ra   
@@ -12,11 +13,12 @@ key_dict :
     cluster : group_name
 
 marker_properties :
-    size : 11
-    color : "#FF4500"
-    opacity : .7
+    size : 8
+    color : "red"
+    opacity : 1.
     symbol : age-based
     line : 
-        width : 0.
+        width : 2.
+        color : red
 
-points_disappear : False
+marker_behavior : "circle-open"

@@ -1,6 +1,5 @@
-trace_name : 'Maria Clusters 25 < Age < 60 Myr'
-file_name : 'data/maria_older.csv'
-
+trace_name : 'Maria Clusters 25 < Age < 70 Myr'
+file_name : 'data/maria_clusters_older.csv'
 key_dict : 
     ra : ra
     dec : dec
@@ -10,14 +9,12 @@ key_dict :
     rv_weighted_med : radial_velocity
     age_myr : age
     cluster : group_name
-
 marker_properties :
-    size : 5.
-    color : cyan
-    opacity : 1.
-    symbol : age-based
-    line : 
-        width : 0
-
-visible : 'legendonly'
-points_disappear : True
+  size : 3.
+  color : cyan
+  opacity : 1.
+  symbol : age-based
+  line : 
+      width : 3
+      color : cyan
+marker_behavior : "disappear"

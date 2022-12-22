@@ -1,0 +1,20 @@
+trace_name : 'Quillen Associations'
+file_name : '/Users/cam/Downloads/quillen.csv'
+key_dict : 
+    ra : ra
+    dec : dec
+    parallax : parallax
+    pmra : pmra
+    pmdec : pmdec
+    radial_velocity : radial_velocity
+    age_myr : age
+    Name : group_name
+marker_properties :
+    size : 9.
+    color : 'magenta'
+    opacity : 1.
+    symbol : age-based
+    line : 
+        width : 3.
+        color : 'magenta'
+marker_behavior : "circle-open"

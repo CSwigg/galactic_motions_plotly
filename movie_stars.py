@@ -9,8 +9,7 @@ import astropy.units as u
 import galpy
 from galpy.orbit import Orbit
 from galpy.potential import MWPotential2014
-from galpy.potential import plotRotcurve
-from galpy.potential import NFWPotential, HernquistPotential, MiyamotoNagaiPotential, NonInertialFrameForce
+from galpy.potential import NFWPotential, HernquistPotential, MiyamotoNagaiPotential, NonInertialFrameForce, SpiralArmsPotential
 from astropy.io import fits
 import plotly.graph_objects as go
 from astropy import coordinates
@@ -32,7 +31,7 @@ class MovieStar:
                  orbit=None,
                  key_dict=None,
                  marker_properties=default_marker_properties,
-                 disappear=True,
+                 marker_behavior='open-circle',
                  visible=True):
         """ Initialize MovieStar 
 
@@ -57,7 +56,7 @@ class MovieStar:
         self.t_mirrored = np.concatenate(
             [np.flip(-1 * self.time_to_integrate[1:]), self.time_to_integrate])
         self.marker_properties = marker_properties
-        self.disappear = disappear
+        self.marker_behavior = marker_behavior
         self.visible = visible  # not being used currently
 
         if df is None:
@@ -85,7 +84,7 @@ class MovieStar:
                    name=yaml_data['trace_name'],
                    key_dict=yaml_data['key_dict'],
                    marker_properties=yaml_data['marker_properties'],
-                   disappear=yaml_data['points_disappear'],
+                   marker_behavior=yaml_data['marker_behavior'],
                    time_to_integrate=time_to_integrate)
 
     def __str__(self):
@@ -111,39 +110,61 @@ class MovieStar:
                             (u.km / u.s))
             self.orbit = Orbit(vxvv=icrs)
 
-
-        ra_int_f, dec_int_f, distance_int_f = integrate_orbit(
-            time=self.time_to_integrate, orbit=self.orbit, pot=MWPotential2014, flip = False)
-        ra_int_b, dec_int_b, distance_int_b = integrate_orbit(
+        #mp= MiyamotoNagaiPotential(a=0.5,b=0.0375,normalize=1.)
+        #mp = HernquistPotential(normalize=1.)
+        mp = MWPotential2014
+        potential = mp
+        ra_int_f, dec_int_f, distance_int_f, pmra_int_f, pmdec_int_f, rv_int_f = integrate_orbit(
+            time=self.time_to_integrate,
+            orbit=self.orbit,
+            pot=potential,
+            flip=False)
+        ra_int_b, dec_int_b, distance_int_b, pmra_int_b, pmdec_int_b, rv_int_b = integrate_orbit(
             time=-1 * self.time_to_integrate[1:],
             orbit=self.orbit,
-            pot=MWPotential2014, flip = True)
+            pot=potential,
+            flip=True)
 
         axis = len(np.shape(ra_int_f)) - 1
-        ra_int = np.concatenate([ra_int_b, ra_int_f],
-                                axis=axis).flatten()
-        dec_int = np.concatenate([dec_int_b, dec_int_f],
-                                 axis=axis).flatten()
-        distance_int = np.concatenate(
-            [distance_int_b, distance_int_f],
-            axis=axis).flatten()
+        ra_int = np.concatenate([ra_int_b, ra_int_f], axis=axis).flatten()
+        dec_int = np.concatenate([dec_int_b, dec_int_f], axis=axis).flatten()
+        distance_int = np.concatenate([distance_int_b, distance_int_f],
+                                      axis=axis).flatten()
+        pmra_int = np.concatenate([pmra_int_b, pmra_int_f],
+                                  axis=axis).flatten()
+        pmdec_int = np.concatenate([pmdec_int_b, pmdec_int_f],
+                                   axis=axis).flatten()
+        rv_int = np.concatenate([rv_int_b, rv_int_f], axis=axis).flatten()
 
         if (self.df is None):  # If Sun
-            t = self.t_mirrored
+            time = self.t_mirrored
             group_name = ['Sun'] * len(ra_int)
-            age = [4600] * len(ra_int)
+            ages = [4600] * len(ra_int)
+
         else:  # For all other traces
-            t = np.tile(self.t_mirrored, len(self.df))
-            age = np.tile(self.df.age.values, len(self.t_mirrored)).T
-            group_name = np.tile(self.df.group_name.values,
-                                 len(self.t_mirrored))
+            # t = np.tile(self.t_mirrored, len(self.df))
+            # age = np.tile(self.df.age.values, len(self.t_mirrored)).T
+            # group_name = np.tile(self.df.group_name.values,
+            #                      len(self.t_mirrored))
+            group_name = []
+            ages = []
+            time = []
+            for name, age in zip(self.df.group_name.values,
+                                 self.df.age.values):
+                for t in self.t_mirrored:
+                    group_name.append(name)
+                    ages.append(age)
+                    time.append(t)
 
         df_integrated = pd.DataFrame({
-            't': t,
+            't': time,
             'ra': ra_int,
             'dec': dec_int,
             'distance': distance_int,
-            'age': age,
+            'pmra': pmra_int,
+            'pmdec': pmdec_int,
+            'rv': rv_int,
+            'age': ages,
             'group_name': group_name
         })
 
@@ -161,20 +182,18 @@ class MovieStar:
             self.df_integrated['size'] = [self.marker_properties['size']
                                           ] * len(self.df_integrated)
 
-        if self.disappear == True:
+        if self.marker_behavior == 'disappear':
             self.df_integrated.loc[(self.df_integrated['t'] < 0.) & (
                 self.df_integrated['age'] <= self.df_integrated['t'].abs()),
                                    'size'] = .000001
-        else:
-            #if np.any(self.df_integrated['t'].values) < 0.:
-            # self.df_integrated.loc[
-            #     self.df_integrated['age'] <= self.df_integrated['t'].abs(),
-            #     'size'] = self.df_integrated.loc[
-            #         self.df_integrated['age'] <= self.df_integrated['t'].abs(),
-            #         'size'] / 1
+
+        elif self.marker_behavior == 'circle-open':
             self.df_integrated.loc[(self.df_integrated['t'] < 0.) & (
                 self.df_integrated['age'] <= self.df_integrated['t'].abs()),
                                    'symbol'] = 'circle-open'
+
+        elif self.marker_behavior == 'remain':
+            pass
 
 
 class Movie:
@@ -186,6 +205,7 @@ class Movie:
                  time: np.ndarray,
                  movie_save_path: str,
                  xyz_ranges=[1500, 1500, 400],
+                 plot_sun=True,
                  center_star='Sun',
                  camera_follow=True,
                  center_galactic=False,
@@ -207,6 +227,7 @@ class Movie:
         self.time = time
         self.time_mirror = np.concatenate(
             [np.flip(-1 * self.time[1:]), self.time])
+        self.plot_sun = plot_sun
         self.center_star = center_star
         self.annotations = annotations
         self.xyz_ranges = xyz_ranges
@@ -231,8 +252,9 @@ class Movie:
         '''
         Generates movie of MovieStar intances, centered on the Sun's motion
         '''
-        self.sun = self.create_sun_orbit()
-        self.movie_stars.append(self.sun)
+        if self.plot_sun:
+            self.sun = self.create_sun_orbit()
+            self.movie_stars.append(self.sun)
 
         self.slider_dict['active'] = int(len(self.time_mirror) / 2)
 
@@ -300,10 +322,11 @@ class Movie:
                 frame['data'].append(trace_frame)
                 frame['layout'] = self.generate_frame_layout(t)
 
-            if self.add_extra_traces:
-                extra_traces = plotly_extra.extra_traces()
-                for trace in extra_traces:
-                    frame['data'].append(trace)
+            if t == 0.:
+                if self.add_extra_traces:
+                    extra_traces = plotly_extra.extra_traces()
+                    for trace in extra_traces:
+                        frame['data'].append(trace)
 
             self.figure['frames'].append(go.Frame(frame))
             slider_step = {
@@ -425,19 +448,24 @@ def open_yaml(filepath):
     return yaml_data
 
 
-def integrate_orbit(time, orbit, pot, flip = False):
+def integrate_orbit(time, orbit, pot, flip=False):
     time = time * u.Myr
 
     orbit.integrate(time, pot=pot)
-    ra =orbit.ra(time)
-    dec =orbit.dec(time)
-    distance =orbit.dist(time)*1000
+    ra = orbit.ra(time)
+    dec = orbit.dec(time)
+    distance = orbit.dist(time) * 1000
+    pmra = orbit.pmra(time)
+    pmdec = orbit.pmdec(time)
+    rv = orbit.vlos(time)
 
-    if flip: # flips the time order of the returned ra, dec, distance values
+    if flip:  # flips the time order of the returned ra, dec, distance values
         axis = len(np.shape(ra)) - 1
-        ra = np.flip(ra, axis = axis)
-        dec = np.flip(dec, axis = axis)
-        distance = np.flip(distance, axis = axis)
+        ra = np.flip(ra, axis=axis)
+        dec = np.flip(dec, axis=axis)
+        distance = np.flip(distance, axis=axis)
+        pmra = np.flip(pmra, axis=axis)
+        pmdec = np.flip(pmdec, axis=axis)
+        rv = np.flip(rv, axis=axis)
 
-
-    return (ra, dec, distance)
+    return (ra, dec, distance, pmra, pmdec, rv)

@@ -1,0 +1,22 @@
+trace_name : 'Maria Clusters Expansion 1'
+file_name : 'data/maria_clusters_expanding_1.csv'
+
+key_dict : 
+    ra : ra   
+    dec : dec
+    parallax : parallax
+    pmra : pmra
+    pmdec : pmdec
+    rv_weighted_med : radial_velocity
+    age_myr : age
+    cluster : group_name
+
+marker_properties :
+    size : 5
+    color : "cyan"
+    opacity : 1.
+    symbol : age-based
+    line : 
+        width : 3.
+        color : 'cyan'
+marker_behavior : "circle-open"
